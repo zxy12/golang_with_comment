@@ -85,6 +85,79 @@ import (
 	"unsafe"
 )
 
+/*
+
+// sizeclass
+// class  bytes/obj  bytes/span  objects  waste bytes
+//     1          8        8192     1024            0
+//     2         16        8192      512            0
+//     3         32        8192      256            0
+//     4         48        8192      170           32
+//     5         64        8192      128            0
+//     6         80        8192      102           32
+//     7         96        8192       85           32
+//     8        112        8192       73           16
+//     9        128        8192       64            0
+//    10        144        8192       56          128
+//    11        160        8192       51           32
+//    12        176        8192       46           96
+//    13        192        8192       42          128
+//    14        208        8192       39           80
+//    15        224        8192       36          128
+//    16        240        8192       34           32
+//    17        256        8192       32            0
+//    18        288        8192       28          128
+//    19        320        8192       25          192
+//    20        352        8192       23           96
+//    21        384        8192       21          128
+//    22        416        8192       19          288
+//    23        448        8192       18          128
+//    24        480        8192       17           32
+//    25        512        8192       16            0
+//    26        576        8192       14          128
+//    27        640        8192       12          512
+//    28        704        8192       11          448
+//    29        768        8192       10          512
+//    30        896        8192        9          128
+//    31       1024        8192        8            0
+//    32       1152        8192        7          128
+//    33       1280        8192        6          512
+//    34       1408       16384       11          896
+//    35       1536        8192        5          512
+//    36       1792       16384        9          256
+//    37       2048        8192        4            0
+//    38       2304       16384        7          256
+//    39       2688        8192        3          128
+//    40       3072       24576        8            0
+//    41       3200       16384        5          384
+//    42       3456       24576        7          384
+//    43       4096        8192        2            0
+//    44       4864       24576        5          256
+//    45       5376       16384        3          256
+//    46       6144       24576        4            0
+//    47       6528       32768        5          128
+//    48       6784       40960        6          256
+//    49       6912       49152        7          768
+//    50       8192        8192        1            0
+//    51       9472       57344        6          512
+//    52       9728       49152        5          512
+//    53      10240       40960        4            0
+//    54      10880       32768        3          128
+//    55      12288       24576        2            0
+//    56      13568       40960        3          256
+//    57      14336       57344        4            0
+//    58      16384       16384        1            0
+//    59      18432       73728        4            0
+//    60      19072       57344        3          128
+//    61      20480       40960        2            0
+//    62      21760       65536        3          256
+//    63      24576       24576        1            0
+//    64      27264       81920        3          128
+//    65      28672       57344        2            0
+//    66      32768       32768        1            0
+
+*/
+
 const (
 	debugMalloc = false
 
@@ -214,7 +287,70 @@ var physPageSize uintptr
 // SysFault marks a (already sysAlloc'd) region to fault
 // if accessed. Used only for debugging the runtime.
 
+func print_const() {
+	/*
+
+	   debugMalloc=false
+	   maxTinySize=16
+	   tinySizeClass=2
+	   maxSmallSize=32768
+	   pageShift=13
+	   pageSize=8192
+	   pageMask=8191
+	   maxObjsPerSpan=1024
+	   mSpanInUse=1
+	   concurrentSweep=true
+	   _PageSize=8192
+	   _PageMask=8191
+	   _64bit=1
+	   _TinySize=16
+	   _TinySizeClass=2
+	   _FixAllocChunk=16384
+	   _MaxMHeapList=128
+	   _HeapAllocChunk=1048576
+	   _StackCacheSize=32768
+	   _NumStackOrders=4
+	   _MHeapMap_TotalBits=39
+	   _MaxMem=549755813887
+	   _MaxGcproc=32
+	   minLegalPointer=4096
+	   physPageSize=4096
+	   _NumSizeClasses= 67
+	   numSpanClasses= 134
+	   tinySpanClass= 5
+	*/
+	print("debugMalloc=", debugMalloc, "\n")
+	print("maxTinySize=", maxTinySize, "\n")
+	print("tinySizeClass=", tinySizeClass, "\n")
+	print("maxSmallSize=", maxSmallSize, "\n")
+	print("pageShift=", pageShift, "\n")
+	print("pageSize=", pageSize, "\n")
+	print("pageMask=", pageMask, "\n")
+	print("maxObjsPerSpan=", maxObjsPerSpan, "\n")
+	print("mSpanInUse=", mSpanInUse, "\n")
+	print("concurrentSweep=", concurrentSweep, "\n")
+	print("_PageSize=", _PageSize, "\n")
+	print("_PageMask=", _PageMask, "\n")
+	print("_64bit=", _64bit, "\n")
+	print("_TinySize=", _TinySize, "\n")
+	print("_TinySizeClass=", _TinySizeClass, "\n")
+	print("_FixAllocChunk=", _FixAllocChunk, "\n")
+	print("_MaxMHeapList=", _MaxMHeapList, "\n")
+	print("_HeapAllocChunk=", _HeapAllocChunk, "\n")
+	print("_StackCacheSize=", _StackCacheSize, "\n")
+	print("_NumStackOrders=", _NumStackOrders, "\n")
+	print("_MHeapMap_TotalBits=", _MHeapMap_TotalBits, "\n")
+	print("_MaxMem=", _MaxMem, "\n")
+	print("_MaxGcproc=", _MaxGcproc, "\n")
+	print("minLegalPointer=", minLegalPointer, "\n")
+	print("physPageSize=", physPageSize, "\n")
+	println("_NumSizeClasses=", _NumSizeClasses)
+	println("numSpanClasses=", numSpanClasses)
+	println("tinySpanClass=", tinySpanClass)
+}
+
 func mallocinit() {
+
 	if class_to_size[_TinySizeClass] != _TinySize {
 		throw("bad TinySizeClass")
 	}
@@ -252,10 +388,10 @@ func mallocinit() {
 	var bitmapSize uintptr = (_MaxMem + 1) / (sys.PtrSize * 8 / 2)
 	bitmapSize = round(bitmapSize, _PageSize)
 
-	print("arena size: ", _MaxMem, "\n")
-	print("spans size: ", spansSize, "\n")
-	print("bitmap size: ", bitmapSize, "\n")
-
+	print("arena size: ", _MaxMem, "\n")     // 512G
+	print("spans size: ", spansSize, "\n")   // 512M
+	print("bitmap size: ", bitmapSize, "\n") // 32G
+	print_const()
 	// Set up the allocation arena, a contiguous area of memory where
 	// allocated data will be found.
 	if sys.PtrSize == 8 {
@@ -299,6 +435,7 @@ func mallocinit() {
 			default:
 				p = uintptr(i)<<40 | uintptrMask&(0x00c0<<32)
 			}
+			println("i=", i, ", p=", p)
 			p = uintptr(sysReserve(unsafe.Pointer(p), pSize, &reserved))
 			if p != 0 {
 				break
@@ -369,6 +506,8 @@ func mallocinit() {
 	// so SysReserve can give us a PageSize-unaligned pointer.
 	// To overcome this we ask for PageSize more and round up the pointer.
 	p1 := round(p, _PageSize)
+	print("p=", p, "\n")   //19349504
+	print("p1=", p1, "\n") //19349504
 	pSize -= p1 - p
 
 	spansStart := p1
@@ -382,10 +521,15 @@ func mallocinit() {
 	} else {
 		mheap_.arena_start = p1
 	}
+	//sp := (*int)(unsafe.Pointer(p1))
+	//*sp = 123
+	//println("p1=", *sp)
 	mheap_.arena_end = p + pSize
 	mheap_.arena_used = p1
 	mheap_.arena_alloc = p1
 	mheap_.arena_reserved = reserved
+
+	print("mheap_.arena_start=", mheap_.arena_start, "\n")
 
 	if mheap_.arena_start&(_PageSize-1) != 0 {
 		println("bad pagesize", hex(p), hex(p1), hex(spansSize), hex(bitmapSize), hex(_PageSize), "start", hex(mheap_.arena_start))
@@ -583,6 +727,7 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 // Small objects are allocated from the per-P cache's free lists.
 // Large objects (> 32 kB) are allocated straight from the heap.
 func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
+
 	if gcphase == _GCmarktermination {
 		throw("mallocgc called with gcphase == _GCmarktermination")
 	}
@@ -667,6 +812,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			// the allocator reduces number of allocations by ~12% and
 			// reduces heap size by ~20%.
 			off := c.tinyoffset
+			//println("size:", size, "off-start:", off)
 			// Align tiny pointer for required (conservative) alignment.
 			if size&7 == 0 {
 				off = round(off, 8)
@@ -675,6 +821,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			} else if size&1 == 0 {
 				off = round(off, 2)
 			}
+			//println("off-round:", off)
+
 			if off+size <= maxTinySize && c.tiny != 0 {
 				// The object fits into existing tiny block.
 				x = unsafe.Pointer(c.tiny + off)
@@ -720,6 +868,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			}
 		}
 	} else {
+		println("now we need:", size)
 		var s *mspan
 		shouldhelpgc = true
 		systemstack(func() {
@@ -813,7 +962,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 }
 
 func largeAlloc(size uintptr, needzero bool, noscan bool) *mspan {
-	// print("largeAlloc size=", size, "\n")
+	print("largeAlloc size=", size, "\n")
 
 	if size+_PageSize < size {
 		throw("out of memory")

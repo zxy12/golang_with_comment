@@ -4,7 +4,7 @@ package objabi
 
 import "runtime"
 
-const defaultGOROOT = `/var/www/go_study/go19/go`
+const defaultGOROOT = `/private/var/www/go_study/go19/go`
 const defaultGO386 = `sse2`
 const defaultGOARM = `7`
 const defaultGOOS = runtime.GOOS

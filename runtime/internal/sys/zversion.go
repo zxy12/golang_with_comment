@@ -2,7 +2,7 @@
 
 package sys
 
-const DefaultGoroot = `/var/www/go_study/go19/go`
+const DefaultGoroot = `/private/var/www/go_study/go19/go`
 const TheVersion = `go1.9`
 const Goexperiment = ``
 const StackGuardMultiplier = 1

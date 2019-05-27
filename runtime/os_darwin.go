@@ -556,12 +556,39 @@ func sigdelset(mask *sigset, i int) {
 var executablePath string
 
 func sysargs(argc int32, argv **byte) {
+
+	/*
+		var m int32 = 0
+		for argv_index(argv, int32(m)) != nil {
+			ss := gostringnocopy(argv_index(argv, int32(m)))
+			print("ss", (m + 1), "=", ss, "\n")
+			m++
+		}
+		//m++
+		for argv_index(argv, int32(m)) != nil {
+			ss := gostringnocopy(argv_index(argv, int32(m)))
+			print("ss", (m + 1), "=", ss, "\n")
+			m++
+		}
+		//m++
+		for argv_index(argv, int32(m)) != nil {
+			ss := gostringnocopy(argv_index(argv, int32(m)))
+			print("ss", (m + 1), "=", ss, "\n")
+			m++
+		}
+	*/
 	// skip over argv, envv and the first string will be the path
 	n := argc + 1
+	print("in sysargs n=", n, "\n")
 	for argv_index(argv, n) != nil {
+		//ss := gostringnocopy(argv_index(argv, n))
+		//print("in for n=", n, ",ss=", ss, "\n")
 		n++
 	}
+	// 获取执行脚本的参数
+
 	executablePath = gostringnocopy(argv_index(argv, n+1))
+	print("executable_path=", executablePath, ",n=", n, "\n")
 
 	// strip "executable_path=" prefix if available, it's added after OS X 10.11.
 	const prefix = "executable_path="

@@ -40,7 +40,9 @@ func sysFault(v unsafe.Pointer, n uintptr) {
 
 func sysReserve(v unsafe.Pointer, n uintptr, reserved *bool) unsafe.Pointer {
 	*reserved = true
+	// 那是为了预留虚拟内存但不占用物理内存,后面会随着分配慢慢的调用mprotect改权限,再调用一次mmap，权限会换
 	p := mmap(v, n, _PROT_NONE, _MAP_ANON|_MAP_PRIVATE, -1, 0)
+	println("in sysReserve,p=", p, ",v=", v)
 	if uintptr(p) < 4096 {
 		return nil
 	}

@@ -175,6 +175,7 @@ echo "##### Building packages and commands for $GOOS/$GOARCH."
 
 old_bin_files=$(cd $GOROOT/bin && echo *)
 
+echo CC=$CC_FOR_TARGET "$GOTOOLDIR"/go_bootstrap install $GO_FLAGS -gcflags "$GO_GCFLAGS" -ldflags "$GO_LDFLAGS" -v std cmd
 CC=$CC_FOR_TARGET "$GOTOOLDIR"/go_bootstrap install $GO_FLAGS -gcflags "$GO_GCFLAGS" -ldflags "$GO_LDFLAGS" -v std cmd
 
 # Check that there are no new files in $GOROOT/bin other than go and gofmt
