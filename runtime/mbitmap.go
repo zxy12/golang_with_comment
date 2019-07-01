@@ -149,10 +149,23 @@ func (h *mheap) mapBits(arena_used uintptr) {
 	// Add extra mappings of bitmap words as needed.
 	// We allocate extra bitmap pieces in chunks of bitmapChunk.
 	const bitmapChunk = 8192
-
+	//println("mapBits - start:", "arena_used=", arena_used, "mheap_.arena_start=", mheap_.arena_start)
+	//println("heapBitmapScale=", heapBitmapScale, "sys.PtrSize=", sys.PtrSize)
 	n := (arena_used - mheap_.arena_start) / heapBitmapScale
+
+	//s := uintptr(1)
+	//println("round 1=", round((s), bitmapChunk))
+	//println("round 1=", round((s), physPageSize))
 	n = round(n, bitmapChunk)
 	n = round(n, physPageSize)
+	//println("h.bitmap_mapped=", h.bitmap_mapped, "n = ", n)
+
+	// bitmap_mapped 用来记录虚拟内存实际使用了多少
+	//                                          n-bitmap_mapped
+	//                                            |    |
+	// |-------spans-------| ------- bitmap ------|====|====| ----------arena------------|
+	//                                        bitmap-n
+
 	if h.bitmap_mapped >= n {
 		return
 	}

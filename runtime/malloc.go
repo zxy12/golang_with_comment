@@ -248,6 +248,7 @@ const (
 // This must be set by the OS init code (typically in osinit) before
 // mallocinit.
 var physPageSize uintptr
+var debugSize bool
 
 // OS-defined helpers:
 //
@@ -344,13 +345,15 @@ func print_const() {
 	print("_MaxGcproc=", _MaxGcproc, "\n")
 	print("minLegalPointer=", minLegalPointer, "\n")
 	print("physPageSize=", physPageSize, "\n")
-	println("_NumSizeClasses=", _NumSizeClasses)
-	println("numSpanClasses=", numSpanClasses)
-	println("tinySpanClass=", tinySpanClass)
+	//println("_NumSizeClasses=", _NumSizeClasses)
+	//println("numSpanClasses=", numSpanClasses)
+	//println("tinySpanClass=", tinySpanClass)
 }
 
 func mallocinit() {
 
+	//var class_to_size = [_NumSizeClasses]uint16{0, 8, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256, 288, 320, 352, 384, 416, 448, 480, 512, 576, 640, 704, 768, 896, 1024, 1152, 1280, 1408, 1536, 1792, 2048, 2304, 2688, 3072, 3200, 3456, 4096, 4864, 5376, 6144, 6528, 6784, 6912, 8192, 9472, 9728, 10240, 10880, 12288, 13568, 14336, 16384, 18432, 19072, 20480, 21760, 24576, 27264, 28672, 32768}
+	// _TinySize=16
 	if class_to_size[_TinySizeClass] != _TinySize {
 		throw("bad TinySizeClass")
 	}
@@ -390,8 +393,8 @@ func mallocinit() {
 
 	print("arena size: ", _MaxMem, "\n")     // 512G
 	print("spans size: ", spansSize, "\n")   // 512M
-	print("bitmap size: ", bitmapSize, "\n") // 32G
-	print_const()
+	print("bitmap size: ", bitmapSize, "\n") // 16G
+	//print_const()
 	// Set up the allocation arena, a contiguous area of memory where
 	// allocated data will be found.
 	if sys.PtrSize == 8 {
@@ -435,7 +438,7 @@ func mallocinit() {
 			default:
 				p = uintptr(i)<<40 | uintptrMask&(0x00c0<<32)
 			}
-			println("i=", i, ", p=", p)
+			//println("i=", i, ", p=", p)
 			p = uintptr(sysReserve(unsafe.Pointer(p), pSize, &reserved))
 			if p != 0 {
 				break
@@ -523,7 +526,7 @@ func mallocinit() {
 	}
 	//sp := (*int)(unsafe.Pointer(p1))
 	//*sp = 123
-	//println("p1=", *sp)
+	////println("p1=", *sp)
 	mheap_.arena_end = p + pSize
 	mheap_.arena_used = p1
 	mheap_.arena_alloc = p1
@@ -532,7 +535,7 @@ func mallocinit() {
 	print("mheap_.arena_start=", mheap_.arena_start, "\n")
 
 	if mheap_.arena_start&(_PageSize-1) != 0 {
-		println("bad pagesize", hex(p), hex(p1), hex(spansSize), hex(bitmapSize), hex(_PageSize), "start", hex(mheap_.arena_start))
+		//println("bad pagesize", hex(p), hex(p1), hex(spansSize), hex(bitmapSize), hex(_PageSize), "start", hex(mheap_.arena_start))
 		throw("misrounded allocation in mallocinit")
 	}
 
@@ -540,9 +543,10 @@ func mallocinit() {
 	mheap_.init(spansStart, spansSize)
 	_g_ := getg()
 	_g_.m.mcache = allocmcache()
+	// 总结一下mallocinit的工作：申请一块虚拟内存，划分spans\bitmap\arena区域的指针指向,把所有结构体中的指针初始化为nil
 }
 
-// sysAlloc allocates the next n bytes from the heap arena. The
+// sysAlloc allocates the next n bytes from` the heap arena. The
 // returned pointer is always _PageSize aligned and between
 // h.arena_start and h.arena_end. sysAlloc returns nil on failure.
 // There is no corresponding free function.
@@ -698,7 +702,7 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 	if freeIndex == s.nelems {
 		// The span is full.
 		if uintptr(s.allocCount) != s.nelems {
-			println("runtime: s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
+			//println("runtime: s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
 			throw("s.allocCount != s.nelems && freeIndex == s.nelems")
 		}
 		systemstack(func() {
@@ -717,7 +721,7 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 	v = gclinkptr(freeIndex*s.elemsize + s.base())
 	s.allocCount++
 	if uintptr(s.allocCount) > s.nelems {
-		println("s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
+		//println("s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
 		throw("s.allocCount > s.nelems")
 	}
 	return
@@ -727,6 +731,11 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 // Small objects are allocated from the per-P cache's free lists.
 // Large objects (> 32 kB) are allocated straight from the heap.
 func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
+
+	if size == 79992 {
+		debugSize = true
+		_ = debugSize
+	}
 
 	if gcphase == _GCmarktermination {
 		throw("mallocgc called with gcphase == _GCmarktermination")
@@ -812,7 +821,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			// the allocator reduces number of allocations by ~12% and
 			// reduces heap size by ~20%.
 			off := c.tinyoffset
-			//println("size:", size, "off-start:", off)
+			////println("size:", size, "off-start:", off)
 			// Align tiny pointer for required (conservative) alignment.
 			if size&7 == 0 {
 				off = round(off, 8)
@@ -821,7 +830,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			} else if size&1 == 0 {
 				off = round(off, 2)
 			}
-			//println("off-round:", off)
+			////println("off-round:", off)
 
 			if off+size <= maxTinySize && c.tiny != 0 {
 				// The object fits into existing tiny block.
@@ -868,7 +877,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			}
 		}
 	} else {
-		println("now we need:", size)
+		//println("now we need:", size, ",noscan=", noscan)
 		var s *mspan
 		shouldhelpgc = true
 		systemstack(func() {
@@ -962,7 +971,6 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 }
 
 func largeAlloc(size uintptr, needzero bool, noscan bool) *mspan {
-	print("largeAlloc size=", size, "\n")
 
 	if size+_PageSize < size {
 		throw("out of memory")
@@ -971,13 +979,16 @@ func largeAlloc(size uintptr, needzero bool, noscan bool) *mspan {
 	if size&_PageMask != 0 {
 		npages++
 	}
+	//println("largeAlloc size=", size, ",pages=", npages, ",needzero=", needzero)
 
 	// Deduct credit for this span allocation and sweep if
 	// necessary. mHeap_Alloc will also sweep npages, so this only
 	// pays the debt down to npage pages.
 	deductSweepCredit(npages*_PageSize, npages)
 
-	s := mheap_.alloc(npages, makeSpanClass(0, noscan), true, needzero)
+	_spanClass := makeSpanClass(0, noscan)
+	//println("spanClass=", _spanClass)
+	s := mheap_.alloc(npages, _spanClass, true, needzero)
 	if s == nil {
 		throw("out of memory")
 	}
@@ -990,6 +1001,7 @@ func largeAlloc(size uintptr, needzero bool, noscan bool) *mspan {
 // compiler (both frontend and SSA backend) knows the signature
 // of this function
 func newobject(typ *_type) unsafe.Pointer {
+	////println("newobject=", typ.size)
 	return mallocgc(typ.size, typ, true)
 }
 
@@ -1000,6 +1012,7 @@ func reflect_unsafe_New(typ *_type) unsafe.Pointer {
 
 // newarray allocates an array of n elements of type typ.
 func newarray(typ *_type, n int) unsafe.Pointer {
+	////println("newobject array=", typ.size, "num=", n)
 	if n < 0 || uintptr(n) > maxSliceCap(typ.size) {
 		panic(plainError("runtime: allocation size out of range"))
 	}
@@ -1155,4 +1168,11 @@ func persistentalloc1(size, align uintptr, sysStat *uint64) unsafe.Pointer {
 		mSysStatDec(&memstats.other_sys, size)
 	}
 	return p
+}
+
+func stat_mheap(h *mheap) {
+	//size := (h.arena_used - h.arena_start)
+	//page := size / _PageSize
+	////println("heap:arena_start=", h.arena_start, ",arena_used=", h.arena_used, ",size=", size, page)
+	////println("heap:free.len", len(h.free))
 }

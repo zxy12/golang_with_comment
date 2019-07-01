@@ -33,7 +33,8 @@ import (
 
 //go:notinheap
 type mTreap struct {
-	treap *treapNode
+	treap   *treapNode
+	nodenum int
 }
 
 //go:notinheap
@@ -97,8 +98,8 @@ func checkTreapNode(t *treapNode) {
 		return
 	}
 	if t.spanKey.npages != t.npagesKey || t.spanKey.next != nil {
-		println("runtime: checkTreapNode treapNode t=", t, "     t.npagesKey=", t.npagesKey,
-			"t.spanKey.npages=", t.spanKey.npages)
+		//println("runtime: checkTreapNode treapNode t=", t, "     t.npagesKey=", t.npagesKey,
+		//	"t.spanKey.npages=", t.spanKey.npages)
 		throw("why does span.npages and treap.ngagesKey do not match?")
 	}
 	if t.left != nil && lessThan(t.left.npagesKey, t.left.spanKey) {
@@ -112,6 +113,8 @@ func checkTreapNode(t *treapNode) {
 // insert adds span to the large span treap.
 func (root *mTreap) insert(span *mspan) {
 	npages := span.npages
+	root.nodenum++
+	//println("mtreap insert a span:", npages)
 	var last *treapNode
 	pt := &root.treap
 	for t := *pt; t != nil; t = *pt {
@@ -149,8 +152,8 @@ func (root *mTreap) insert(span *mspan) {
 	// Rotate up into tree according to priority.
 	for t.parent != nil && t.parent.priority > t.priority {
 		if t != nil && t.spanKey.npages != t.npagesKey {
-			println("runtime: insert t=", t, "t.npagesKey=", t.npagesKey)
-			println("runtime:      t.spanKey=", t.spanKey, "t.spanKey.npages=", t.spanKey.npages)
+			//println("runtime: insert t=", t, "t.npagesKey=", t.npagesKey)
+			//println("runtime:      t.spanKey=", t.spanKey, "t.spanKey.npages=", t.spanKey.npages)
 			throw("span and treap sizes do not match?")
 		}
 		if t.parent.left == t {
@@ -203,6 +206,7 @@ func (root *mTreap) removeNode(t *treapNode) *mspan {
 // If the last node inspected > npagesKey not holding
 // a left node (a smaller npages) is the "best fit" node.
 func (root *mTreap) remove(npages uintptr) *mspan {
+
 	t := root.treap
 	for t != nil {
 		if t.spanKey == nil {
@@ -215,6 +219,8 @@ func (root *mTreap) remove(npages uintptr) *mspan {
 		} else {
 			result := t.spanKey
 			root.removeNode(t)
+			root.nodenum--
+			////println("mtreap remove a span:", t.npagesKey, ",need:", npages)
 			return result
 		}
 	}

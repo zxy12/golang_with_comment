@@ -27,6 +27,7 @@ const minPhysPageSize = 4096
 // which must not be heap-allocated.
 //
 //go:notinheap
+
 type mheap struct {
 	lock      mutex
 	free      [_MaxMHeapList]mSpanList // free lists of given length up to _MaxMHeapList
@@ -489,6 +490,7 @@ func (h *mheap) init(spansStart, spansBytes uintptr) {
 	h.spanalloc.zero = false
 
 	// h->mapcache needs no init
+	// _MaxMHeapList = 128
 	for i := range h.free {
 		h.free[i].init()
 		h.busy[i].init()
@@ -543,15 +545,23 @@ func (h *mheap) mapSpans(arena_used uintptr) {
 	// Map spans array, PageSize at a time.
 	n := arena_used
 	n -= h.arena_start
+	// 每个span区域的1个Byte对应1个pagesize
 	n = n / _PageSize * sys.PtrSize
-	n = round(n, physPageSize)
-	need := n / unsafe.Sizeof(h.spans[0])
+	n = round(n, physPageSize)            // 对齐1个物理page
+	need := n / unsafe.Sizeof(h.spans[0]) // h.spans[0] = *mspan = 一个指针
 	have := uintptr(len(h.spans))
+	//println("need=", need, "size spans=", unsafe.Sizeof(h.spans[0]), "have=", have)
 	if have >= need {
 		return
 	}
 	h.spans = h.spans[:need]
+	// 把spans上对应位置内存设置为可用,以一组为单位（1 Page）
 	sysMap(unsafe.Pointer(&h.spans[have]), (need-have)*unsafe.Sizeof(h.spans[0]), h.arena_reserved, &memstats.other_sys)
+	//tmp := h.spans[0]
+	////println("h.span0=", tmp)
+	//tmp2 := (*mspan)(unsafe.Pointer(uintptr(0)))
+	//h.spans[0] = tmp2
+	//h.spans[0] = tmp
 }
 
 // Sweeps spans in list until reclaims at least npages into heap.
@@ -657,6 +667,8 @@ func (h *mheap) alloc_m(npage uintptr, spanclass spanClass, large bool) *mspan {
 		}
 	}
 
+	stat_mheap(h)
+
 	// transfer stats from cache to global
 	memstats.heap_scan += uint64(_g_.m.mcache.local_scan)
 	_g_.m.mcache.local_scan = 0
@@ -721,6 +733,8 @@ func (h *mheap) alloc_m(npage uintptr, spanclass spanClass, large bool) *mspan {
 	// order these writes. On the read side, the data dependency
 	// between p and the index in h.spans orders the reads.
 	unlock(&h.lock)
+
+	stat_mheap(h)
 	return s
 }
 
@@ -797,6 +811,7 @@ func (h *mheap) allocSpanLocked(npage uintptr, stat *uint64) *mspan {
 	// Best fit in list of large spans.
 	s = h.allocLarge(npage) // allocLarge removed s from h.freelarge for us
 	if s == nil {
+		//println("heap:treap have no fit span")
 		if !h.grow(npage) {
 			return nil
 		}
@@ -847,7 +862,7 @@ HaveSpan:
 	*stat += uint64(npage << _PageShift)
 	memstats.heap_idle -= uint64(npage << _PageShift)
 
-	//println("spanalloc", hex(s.start<<_PageShift))
+	////println("spanalloc", hex(s.start<<_PageShift))
 	if s.inList() {
 		throw("still in list")
 	}
@@ -1244,7 +1259,7 @@ func (list *mSpanList) isEmpty() bool {
 
 func (list *mSpanList) insert(span *mspan) {
 	if span.next != nil || span.prev != nil || span.list != nil {
-		println("runtime: failed MSpanList_Insert", span, span.next, span.prev, span.list)
+		//println("runtime: failed MSpanList_Insert", span, span.next, span.prev, span.list)
 		throw("MSpanList_Insert")
 	}
 	span.next = list.first
@@ -1262,7 +1277,7 @@ func (list *mSpanList) insert(span *mspan) {
 
 func (list *mSpanList) insertBack(span *mspan) {
 	if span.next != nil || span.prev != nil || span.list != nil {
-		println("runtime: failed MSpanList_InsertBack", span, span.next, span.prev, span.list)
+		//println("runtime: failed MSpanList_InsertBack", span, span.next, span.prev, span.list)
 		throw("MSpanList_InsertBack")
 	}
 	span.prev = list.last

@@ -1,3 +1,3 @@
 
 all:
-	./make.bash
+	export GOROOT_BOOTSTRAP=/usr/local/go && ./make.bash

@@ -579,7 +579,7 @@ func sysargs(argc int32, argv **byte) {
 	*/
 	// skip over argv, envv and the first string will be the path
 	n := argc + 1
-	print("in sysargs n=", n, "\n")
+	//print("in sysargs n=", n, "\n")
 	for argv_index(argv, n) != nil {
 		//ss := gostringnocopy(argv_index(argv, n))
 		//print("in for n=", n, ",ss=", ss, "\n")
@@ -588,7 +588,7 @@ func sysargs(argc int32, argv **byte) {
 	// 获取执行脚本的参数
 
 	executablePath = gostringnocopy(argv_index(argv, n+1))
-	print("executable_path=", executablePath, ",n=", n, "\n")
+	//print("executable_path=", executablePath, ",n=", n, "\n")
 
 	// strip "executable_path=" prefix if available, it's added after OS X 10.11.
 	const prefix = "executable_path="
